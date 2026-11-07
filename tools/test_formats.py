@@ -63,6 +63,10 @@ def real():
         for t, g, v, off, us, cs in pak.resources(b):
             if t == "FONT":
                 font.Font(lzss.unpack_asset(b[off:off + cs], us) if cs != us else b[off:off + cs])
+    import pakwrite
+    for p in glob.glob(os.path.join(ROMFS, "**", "*.pak"), recursive=True):
+        b = open(p, "rb").read()
+        assert pakwrite.rebuild(b) == b, f"пересборка без замен меняет {p}"
     out, report = transfer.transfer(ROMFS)
     assert len(out) >= MIN_AUTO, f"по-русски {len(out)} строк, было {MIN_AUTO}"
     assert not report, f"без перевода {len(report)} строк: {[r[0] for r in report][:5]}"

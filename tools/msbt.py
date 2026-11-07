@@ -72,3 +72,50 @@ if __name__ == "__main__":
         print(f"== {g}  языки: {' '.join(langs)}  строк: {len(rows)}")
         for label, text in rows[:3]:
             print(f"  {label}: {text[:100]!r}")
+
+
+def build(m, texts):
+    """MsgStdBn заново: LBL1, ATR1 и прочие секции как есть, TXT2 — строки texts (по индексу).
+    Секции: 4cc, u32 размер, 8 байт, данные, добивка 0xAB до 16; размер файла — u32 по 0x12."""
+    assert m[:8] == b"MsgStdBn" and m[8:10] == b"\xff\xfe", m[:10]
+    n, = struct.unpack_from("<H", m, 0x0E)
+    out = bytearray(m[:0x20])
+    p = 0x20
+    for _ in range(n):
+        name = m[p:p + 4]
+        size, = struct.unpack_from("<I", m, p + 4)
+        hdr = bytearray(m[p:p + 16])
+        data = m[p + 16:p + 16 + size]
+        if name == b"TXT2":
+            count, = struct.unpack_from("<I", data, 0)
+            if count != len(texts):
+                raise ValueError(f"TXT2: {count} строк, дано {len(texts)}")
+            strs = [(t + "\0").encode("utf-16-le") for t in texts]
+            offs, at = [], 4 + 4 * count
+            for s in strs:
+                offs.append(at)
+                at += len(s)
+            data = struct.pack(f"<I{count}I", count, *offs) + b"".join(strs)
+            struct.pack_into("<I", hdr, 4, len(data))
+        out += hdr + data
+        while len(out) % 16:
+            out.append(0xAB)
+        p = (p + 16 + size + 15) & ~15
+    struct.pack_into("<I", out, 0x12, len(out))
+    return bytes(out)
+
+
+def build_resource(res, langs):
+    """Ресурс MSBT (RFRM) с заменёнными языковыми блоками: langs = {язык: MsgStdBn}."""
+    blocks = lang_blocks(res)
+    out = bytearray(res[:32])
+    p = 32
+    for lang, (s, e) in blocks.items():
+        hdr = bytearray(res[s - 24:s])
+        body = langs.get(lang, res[s:e])
+        struct.pack_into("<Q", hdr, 4, len(body))
+        out += hdr + body
+        p = e
+    out += res[p:]
+    struct.pack_into("<Q", out, 4, len(out) - 32)
+    return bytes(out)
