@@ -1,0 +1,13 @@
+# Данные Nintendo и секреты — никогда не в git
+*.nsp
+*.nsz
+*.xci
+*.xcz
+*.nca
+*.keys
+*.tik
+work/
+mod/
+build/
+dist/
+__pycache__/
