@@ -63,3 +63,21 @@ if __name__ == "__main__":
         for t, n in Counter(r[0] for r in rs).most_common():
             print(t, n)
         print(len(rs), "ресурсов")
+
+
+def meta_table(b):
+    """{guid hex: метаданные ресурса} из блока META оглавления (запись: GUID 16 + u32 смещение
+    от начала данных блока на u32 длину и сами метаданные)."""
+    top = chunks(b, 0, len(b))
+    out = {}
+    for k, cs, ce in chunks(b, top[0][1], top[0][2]):
+        if k == b"TOCC":
+            for k2, s2, e2 in chunks(b, cs, ce):
+                if k2 == b"META":
+                    n, = struct.unpack_from("<I", b, s2)
+                    for i in range(n):
+                        guid = b[s2 + 4 + 20 * i:s2 + 20 + 20 * i].hex()
+                        off, = struct.unpack_from("<I", b, s2 + 20 + 20 * i)
+                        ln, = struct.unpack_from("<I", b, s2 + off)
+                        out[guid] = b[s2 + off + 4:s2 + off + 4 + ln]
+    return out
