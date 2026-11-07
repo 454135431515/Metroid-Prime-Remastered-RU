@@ -264,6 +264,19 @@ def cap_З(P):
     return Drawn(m)
 
 
+def cap_Ч(P):
+    """Ч: левый стем скосом переходит в перекладину на середине, правый стем во всю высоту. Копия
+    цифры 4 читалась цифрой: в шрифте Remastered у 4 косая черта («4озо»), у Deface — прямой угол."""
+    s, t, w, mid = P.s, P.t, P.w, P.mid
+    k = 2 * s  # скос чаши: левый стем уходит в перекладину по диагонали (у цифры 4 Deface угол прямой)
+    m = canvas(w, P.h)
+    rect(m, 0, 0, s, mid - k + 1)
+    diagonal(m, 0, mid - k, k, mid, s)
+    rect(m, k, mid, w, mid + t)
+    rect(m, w - s, 0, w, P.h)
+    return Drawn(m)
+
+
 def cap_Ж(P):
     k = P.mask("K")
     return Drawn(overlay([r[::-1] for r in k], k, len(k[0]) - P.s))
@@ -405,7 +418,7 @@ CAPITALS = {
     "О": ("O", ("copy", "O")), "Р": ("P", ("copy", "P")), "С": ("C", ("copy", "C")),
     "Т": ("T", ("copy", "T")), "Х": ("X", ("copy", "X")),
     "П": ("N", ("copy", "N")), "Ш": ("W", ("copy", "W")), "З": ("3", ("draw", cap_З)),
-    "Ч": ("4", ("copy", "4")), "Я": ("R", ("mirror", "R")),
+    "Ч": ("H", ("draw", cap_Ч)), "Я": ("R", ("mirror", "R")),
     "Б": ("H", ("draw", cap_Б)), "Г": ("E", ("draw", cap_Г)), "Д": ("H", ("draw", cap_Д)),
     "Ж": ("K", ("draw", cap_Ж)), "И": ("H", ("draw", cap_И)), "Й": ("H", ("draw", cap_Й)),
     "Л": ("H", ("draw", cap_Л)), "У": ("H", ("draw", cap_У)), "Ф": ("H", ("draw", cap_Ф)),
@@ -444,7 +457,7 @@ LOWERCASE = {
     "ш": ("w", ("copy", "w")), "г": ("r", ("copy", "r")), "б": ("n", ("draw", low(cap_Б))),
     "в": ("n", ("draw", low_small("B"))), "з": ("n", ("draw", low(cap_З))),
     "к": ("n", ("draw", low_small("K"))), "н": ("n", ("draw", low_small("H"))),
-    "т": ("n", ("draw", low_small("T"))), "ч": ("n", ("draw", low_small("4"))),
+    "т": ("n", ("draw", low_small("T"))), "ч": ("n", ("draw", low(cap_Ч))),
     "я": ("n", ("small_mirror", "R")),
     "д": ("n", ("draw", low(cap_Д))), "ж": ("n", ("draw", low(cap_Ж))),
     "и": ("n", ("draw", low(cap_И))), "й": ("n", ("draw", low(cap_Й))),
