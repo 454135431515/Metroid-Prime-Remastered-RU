@@ -106,7 +106,43 @@ def txtr_asset(old, meta, width, height, pixels):
     return bytes(asset), new_meta
 
 
-def cyrillize(font_bytes, atlas_asset, atlas_meta, preview=None):
+def borrow(w, h, dist, glyphs, donor):
+    """Глифы, которых нет в шрифте, — из шрифта-донора того же размера (шрифт меню — урезанный
+    игровой): поле расстояний копируется полками ниже атласа, u/v пересчитываются.
+    donor = (ширина, высота, поле, {символ: 9 f32}). Возвращает (высота, поле, глифы)."""
+    dw, dh, ddist, dg = donor
+    have = {g[0] for g in glyphs}
+    take = sorted(c for c in dg if c not in have)
+    boxes = []
+    for c in take:
+        f = dg[c]
+        x0, x1 = sorted((round(f[4] * dw), round(f[6] * dw)))
+        y0, y1 = sorted((round(f[5] * dh), round(f[7] * dh)))
+        boxes.append((c, f, ddist[y0:y1, x0:x1]))
+    x, y, shelf, spots = 1, h + 1, 0, []
+    for c, f, field in boxes:
+        fh, fw = field.shape
+        if x + fw + 1 > w:
+            x, y, shelf = 1, y + shelf + 1, 0
+        spots.append((x, y))
+        x += fw + 1
+        shelf = max(shelf, fh)
+    nh = y + shelf + 1 if boxes else h
+    out = np.zeros((nh, w), np.uint8)
+    out[:h] = dist
+    glyphs = [list(g) for g in glyphs]
+    for g in glyphs:
+        g[6], g[8] = g[6] * h / nh, g[8] * h / nh
+    for (c, f, field), (sx, sy) in zip(boxes, spots):
+        fh, fw = field.shape
+        out[sy:sy + fh, sx:sx + fw] = field
+        flip = f[5] > f[7]  # у донора v0 > v1 — строки атласа снизу вверх; сохраняем ориентацию
+        v_top, v_bot = (sy + fh) / nh, sy / nh
+        glyphs.append([c] + list(f[:4]) + [sx / w, v_top if flip else v_bot, (sx + fw) / w, v_bot if flip else v_top, f[8]])
+    return nh, out, glyphs, take
+
+
+def cyrillize(font_bytes, atlas_asset, atlas_meta, preview=None, donor=None):
     """(новый FONT, новый TXTR, новые метаданные TXTR, добавлено глифов)."""
     font = Font(font_bytes)
     w, h, px = txtr.decode_r8(atlas_asset, atlas_meta)
@@ -116,8 +152,12 @@ def cyrillize(font_bytes, atlas_asset, atlas_meta, preview=None):
     seen = {}
     for rec, ch, f in lat:
         seen.setdefault(ch, [ch] + f)
-    hd_font.write(src, w, h, font.pad, PER_PIXEL, list(seen.values()),
-                  np.frombuffer(px, np.uint8).reshape(h, w))
+    dist0 = np.frombuffer(px, np.uint8).reshape(h, w)
+    glyphs0 = list(seen.values())
+    borrowed = []
+    if donor:
+        h, dist0, glyphs0, borrowed = borrow(w, h, dist0, glyphs0, donor)
+    hd_font.write(src, w, h, font.pad, PER_PIXEL, glyphs0, dist0)
     hd_font.build(src, dst, preview)
     nw, nh, _, _, glyphs, dist = hd_font.read(dst)
     assert nw == w
@@ -125,6 +165,8 @@ def cyrillize(font_bytes, atlas_asset, atlas_meta, preview=None):
     for rec, ch, _ in lat:  # старые глифы: v пересчитаны под новую высоту
         struct.pack_into("<9f", rec[0], 8, *by[ch][1:])
     template = {ch: rec[0] for rec, ch, _ in lat}
+    if borrowed:
+        print(f"  из шрифта-донора: {''.join(map(chr, borrowed))}")
     recipes = {**cyrillic.CAPITALS, **cyrillic.LOWERCASE}
     added = 0
     for g in glyphs:
@@ -142,8 +184,33 @@ def cyrillize(font_bytes, atlas_asset, atlas_meta, preview=None):
     return font.build(), asset, meta, added
 
 
+def load_font(pak_path):
+    """(байты FONT, ресурс атласа, метаданные атласа) первого FONT архива."""
+    b = open(pak_path, "rb").read()
+    rs = {r[1]: r for r in pak.resources(b)}
+    metas = pak.meta_table(b)
+    t, g, v, off, us, cs = [r for r in pak.resources(b) if r[0] == "FONT"][0]
+    fb = lzss.unpack_asset(b[off:off + cs], us) if cs != us else b[off:off + cs]
+    tex = Font(fb).textures[0]
+    r = rs[tex]
+    return fb, b[r[3]:r[3] + r[5]], metas[tex]
+
+
+def donor_of(pak_path):
+    fb, asset, meta = load_font(pak_path)
+    w, h, px = txtr.decode_r8(asset, meta)
+    return w, h, np.frombuffer(px, np.uint8).reshape(h, w), {ch: f for _, ch, f in Font(fb).latin()}
+
+
 if __name__ == "__main__":
-    pak_path, out = sys.argv[1], sys.argv[2]
+    args = sys.argv[1:]
+    donor = None
+    if "--donor" in args:
+        k = args.index("--donor")
+        donor = donor_of(args[k + 1])
+        del args[k:k + 2]
+    pak_path, out = args[0], args[1]
+    sys.argv = [sys.argv[0]] + args
     b = open(pak_path, "rb").read()
     rs = {r[1]: r for r in pak.resources(b)}
     metas = pak.meta_table(b)
@@ -153,7 +220,7 @@ if __name__ == "__main__":
         fb = lzss.unpack_asset(b[off:off + cs], us) if cs != us else b[off:off + cs]
         tex = Font(fb).textures[0]
         r = rs[tex]
-        nf, na, nm, added = cyrillize(fb, b[r[3]:r[3] + r[5]], metas[tex], sys.argv[3] if len(sys.argv) > 3 else None)
+        nf, na, nm, added = cyrillize(fb, b[r[3]:r[3] + r[5]], metas[tex], sys.argv[3] if len(sys.argv) > 3 else None, donor)
         os.makedirs(out, exist_ok=True)
         for name, data in ((f"{g}.FONT", nf), (f"{tex}.TXTR", na), (f"{tex}.meta", nm)):
             open(os.path.join(out, name), "wb").write(data)
