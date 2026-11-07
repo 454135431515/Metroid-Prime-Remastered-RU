@@ -41,3 +41,58 @@ def unpack_asset(blob, out_size):
     if mode == 0:
         return blob[4:4 + out_size]
     return decompress(mode, blob[4:], out_size)
+
+
+def compress(mode, data):
+    """Обратное к decompress: жадный поиск самого длинного совпадения группами (как пишет игра,
+    байт в байт не обязательно — проверяется распаковкой). Длина данных кратна группе."""
+    g = 1 << (mode - 1)
+    if len(data) % g:
+        raise ValueError("длина не кратна группе")
+    groups = [data[i:i + g] for i in range(0, len(data), g)]
+    max_count = 15 + (4 - mode)
+    min_count = 4 - mode
+    if min_count < 1:
+        min_count = 1
+    seen = {}
+    out = bytearray()
+    flags_pos, nflags, flags = None, 8, 0
+    i = 0
+
+    def put_flag(bit, payload):
+        nonlocal flags_pos, nflags, flags
+        if nflags == 8:
+            if flags_pos is not None:
+                out[flags_pos] = flags
+            flags_pos, nflags, flags = len(out), 0, 0
+            out.append(0)
+        flags |= bit << (7 - nflags)
+        nflags += 1
+        out.extend(payload)
+
+    while i < len(groups):
+        best_len, best_dist = 0, 0
+        for j in reversed(seen.get(groups[i], ())[-64:]):
+            dist = i - j
+            if dist > 4095:
+                break
+            n = 0
+            while n < max_count and i + n < len(groups) and groups[j + n] == groups[i + n]:
+                n += 1
+            if n > best_len:
+                best_len, best_dist = n, dist
+                if n == max_count:
+                    break
+        if best_len >= max(min_count, 2 if mode == 1 else 1) and best_len * g > 2:
+            c = best_len - (4 - mode)
+            put_flag(1, bytes([(c << 4) | (best_dist >> 8), best_dist & 0xFF]))
+            step = best_len
+        else:
+            put_flag(0, groups[i])
+            step = 1
+        for k in range(step):
+            seen.setdefault(groups[i + k], []).append(i + k)
+        i += step
+    if flags_pos is not None:
+        out[flags_pos] = flags
+    return bytes(out)
