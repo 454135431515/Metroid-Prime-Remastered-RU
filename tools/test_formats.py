@@ -19,8 +19,8 @@ import transfer  # noqa: E402
 import txtr  # noqa: E402
 
 ROMFS = os.path.join(HERE, "..", "work", "romfs")
-# не меньше стольких строк переводится автоматически (храповик: число только растёт)
-MIN_AUTO = 2067
+# не меньше стольких строк по-русски (храповик: число только растёт); ручных — ноль
+MIN_AUTO = 2893
 
 
 def synthetic():
@@ -64,7 +64,8 @@ def real():
             if t == "FONT":
                 font.Font(lzss.unpack_asset(b[off:off + cs], us) if cs != us else b[off:off + cs])
     out, report = transfer.transfer(ROMFS)
-    assert len(out) >= MIN_AUTO, f"автоматически переведено {len(out)}, было {MIN_AUTO}"
+    assert len(out) >= MIN_AUTO, f"по-русски {len(out)} строк, было {MIN_AUTO}"
+    assert not report, f"без перевода {len(report)} строк: {[r[0] for r in report][:5]}"
     print(f"formats: fonts ok, transfer {len(out)} строк, ручных {len(report)}")
 
 
