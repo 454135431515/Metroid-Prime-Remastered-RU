@@ -10,4 +10,4 @@
 | R5 | RomFS-мод, сборщик у игрока, проверка в PrimeRecomp | M | R4 | todo |
 | R3b | Перевод главного меню и настроек Remastered | M | R3 | done |
 | R3c | Перевод паузы, карты и игровых сообщений Remastered | M | R3b | done |
-| R3d | Перевод HUD и экрана снаряжения Remastered | M | R3c | review |
+| R3d | Перевод HUD и экрана снаряжения Remastered | M | R3c | done |
