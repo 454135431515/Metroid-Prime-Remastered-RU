@@ -12,4 +12,4 @@
 | R3c | Перевод паузы, карты и игровых сообщений Remastered | M | R3b | done |
 | R3d | Перевод HUD и экрана снаряжения Remastered | M | R3c | done |
 | R3e | Перевод сканов и сообщений Remastered | L | R3d | done |
-| R3f | Титры Remastered | S | R3e | review |
+| R3f | Титры Remastered | S | R3e | done |
