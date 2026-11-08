@@ -6,13 +6,15 @@
 только изменённые архивы: `<папка мода>/romfs/<путь в RomFS>` — как мод Ryujinx/yuzu/Atmosphere,
 который PrimeRecomp подхватывает из своей папки `mods` (R5).
 
-Текст: блоки USEN и EUEN каждого MSBT получают русские строки (tools/transfer.py; язык зависит
-от языка системы — английский США или Великобритании). Шрифты: FONT начертания 0 + атлас TXTR с
+Текст: блоки USEN и EUEN каждого MSBT получают русские строки из text/ru-labels.json (итог
+tools/transfer.py, обновляется tools/sync_gc.py; язык зависит от языка системы — английский США
+или Великобритании). Шрифты: FONT начертания 0 + атлас TXTR с
 кириллицей (tools/font.py); шрифт меню берёт недостающие глифы у игрового. Архивы пересобираются
 tools/pakwrite.py (без замен — байт в байт как у игры).
 """
 
 import os
+import json
 import struct
 import sys
 
@@ -23,11 +25,11 @@ import lzss  # noqa: E402
 import msbt  # noqa: E402
 import pak  # noqa: E402
 import pakwrite  # noqa: E402
-import transfer  # noqa: E402
 
 LANGS = ("USEN", "EUEN")
 GAME_FONT = os.path.join("Preload", "MPR1", "GuiSysMP1.pak")
 MENU_FONT = os.path.join("Preload", "MPRT", "PreloadFrontEndMPT.pak")
+LABELS = os.path.join(HERE, "..", "text", "ru-labels.json")
 
 
 def pack_asset(data):
@@ -36,8 +38,8 @@ def pack_asset(data):
     return struct.pack("<I", mode) + lzss.compress(mode, data)
 
 
-def text_assets(b, ru):
-    """{guid: (новый MSBT, размер)} для MSBT архива, где что-то изменилось."""
+def text_assets(b, ru, used):
+    """{guid: (новый MSBT, размер)} для MSBT архива, где что-то изменилось; used — найденные метки."""
     out = {}
     for t, g, v, off, us, cs in pak.resources(b):
         if t != "MSBT" or g in out:
@@ -49,6 +51,7 @@ def text_assets(b, ru):
             s, e = blocks[lang]
             m = res[s:e]
             rows = msbt.parse(m)
+            used.update(label for label, _ in rows if label in ru)
             texts = [ru.get(label, text) for label, text in rows]
             if texts != [text for _, text in rows]:
                 langs[lang] = msbt.build(m, texts)
@@ -69,9 +72,8 @@ def font_assets(path, donor=None):
 
 
 def build(romfs, mod):
-    ru, report = transfer.transfer(romfs)
-    if report:
-        raise SystemExit(f"без перевода {len(report)} строк: {[r[0] for r in report][:5]} — сборка отменена")
+    ru = json.load(open(LABELS, encoding="utf-8"))
+    used = set()
     donor = font.donor_of(os.path.join(romfs, GAME_FONT))
     written = []
     for root, _, files in os.walk(romfs):
@@ -81,20 +83,23 @@ def build(romfs, mod):
             path = os.path.join(root, name)
             rel = os.path.relpath(path, romfs)
             b = open(path, "rb").read()
-            assets, metas = text_assets(b, ru), {}
+            assets, metas = text_assets(b, ru, used), {}
             if rel in (GAME_FONT, MENU_FONT):
                 fa, fm, added = font_assets(path, donor if rel == MENU_FONT else None)
                 assets.update(fa)
                 metas.update(fm)
             if not assets:
                 continue
-            nb = pakwrite.rebuild(b, assets, metas)
-            dst = os.path.join(mod, "romfs", rel)
-            os.makedirs(os.path.dirname(dst), exist_ok=True)
-            open(dst, "wb").write(nb)
-            written.append((rel, len(assets), len(b), len(nb)))
-    for rel, n, a, b in written:
-        print(f"  {rel}: {n} ресурсов, {a} -> {b} байт")
+            written.append((rel, len(assets), len(b), pakwrite.rebuild(b, assets, metas)))
+    missing = sorted(set(ru) - used)
+    if missing:  # другая версия игры: строки не на своих местах — мод не пишется вовсе
+        raise SystemExit(f"в архивах игры нет {len(missing)} строк перевода ({missing[:3]}): "
+                         "нужна Metroid Prime Remastered v1.0.0 (010012101468C000)")
+    for rel, n, a, nb in written:
+        dst = os.path.join(mod, "romfs", rel)
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        open(dst, "wb").write(nb)
+        print(f"  {rel}: {n} ресурсов, {a} -> {len(nb)} байт")
     print(f"мод: {len(written)} архивов, строк по-русски {len(ru)} -> {mod}")
     return written
 

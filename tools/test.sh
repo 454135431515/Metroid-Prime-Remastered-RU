@@ -10,3 +10,6 @@ if git diff --cached --name-only | grep -E -i '\.(nsp|nsz|xci|xcz|nca|keys|tik|p
 fi
 
 python -I tools/test_formats.py
+
+# Копии из перевода GameCube (код шрифтов, таблица строк) не отстали от источника (ADR 0004).
+python -I tools/sync_gc.py --check

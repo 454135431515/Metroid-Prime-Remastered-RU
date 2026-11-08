@@ -17,6 +17,7 @@ width, height, u0, v0, u1, v1, advance), u32 число пар кернинга,
 """
 
 import os
+import shutil
 import struct
 import sys
 import tempfile
@@ -25,7 +26,7 @@ import numpy as np
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-sys.path.insert(1, os.path.join(HERE, "..", "..", "MP russian", "tools"))
+sys.path.insert(1, os.path.join(HERE, "gc"))  # код шрифтов перевода GameCube (tools/sync_gc.py)
 import cyrillic  # noqa: E402
 import hd_font  # noqa: E402
 import lzss  # noqa: E402
@@ -147,7 +148,7 @@ def cyrillize(font_bytes, atlas_asset, atlas_meta, preview=None, donor=None):
     font = Font(font_bytes)
     w, h, px = txtr.decode_r8(atlas_asset, atlas_meta)
     lat = font.latin()
-    work = tempfile.mkdtemp(prefix="font-", dir=os.path.join(HERE, "..", "work"))
+    work = tempfile.mkdtemp(prefix="font-")
     src, dst = os.path.join(work, "src.sdfont"), os.path.join(work, "dst.sdfont")
     seen = {}
     for rec, ch, f in lat:
@@ -160,6 +161,7 @@ def cyrillize(font_bytes, atlas_asset, atlas_meta, preview=None, donor=None):
     hd_font.write(src, w, h, font.pad, PER_PIXEL, glyphs0, dist0)
     hd_font.build(src, dst, preview)
     nw, nh, _, _, glyphs, dist = hd_font.read(dst)
+    shutil.rmtree(work)
     assert nw == w
     by = {g[0]: g for g in glyphs}
     for rec, ch, _ in lat:  # старые глифы: v пересчитаны под новую высоту
