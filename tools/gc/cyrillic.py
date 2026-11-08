@@ -249,21 +249,6 @@ def cap_Д(P):
     return Drawn(m, below=P.desc)
 
 
-def cap_З(P):
-    """З: верхняя чаша уже нижней, правый стем с уступом на перекладине. Копия цифры 3 совпадала
-    с Э — «Зта», «забрало» с Э."""
-    s, t, w, h, mid, u = P.s, P.t, P.w, P.h, P.mid, UNIT
-    r = w - 2 * u  # правый край верхней чаши
-    m = canvas(w, h)
-    rect(m, 0, 0, r, t)
-    rect(m, r - s, 0, r, mid + t)
-    rect(m, w // 3, mid, w, mid + t)
-    rect(m, w - s, mid, w, h)
-    rect(m, 0, h - t, w, h)
-    chamfer(m, (0, 0), (r - 1, 0), (w - 1, mid), (w - 1, h - 1), (0, h - 1))
-    return Drawn(m)
-
-
 def cap_Ж(P):
     k = P.mask("K")
     return Drawn(overlay([r[::-1] for r in k], k, len(k[0]) - P.s))
@@ -404,7 +389,7 @@ CAPITALS = {
     "К": ("K", ("copy", "K")), "М": ("H", ("draw", cap_М)), "Н": ("H", ("copy", "H")),
     "О": ("O", ("copy", "O")), "Р": ("P", ("copy", "P")), "С": ("C", ("copy", "C")),
     "Т": ("T", ("copy", "T")), "Х": ("X", ("copy", "X")),
-    "П": ("N", ("copy", "N")), "Ш": ("W", ("copy", "W")), "З": ("3", ("draw", cap_З)),
+    "П": ("N", ("copy", "N")), "Ш": ("W", ("copy", "W")), "З": ("3", ("copy", "3")),
     "Ч": ("4", ("copy", "4")), "Я": ("R", ("mirror", "R")),
     "Б": ("H", ("draw", cap_Б)), "Г": ("E", ("draw", cap_Г)), "Д": ("H", ("draw", cap_Д)),
     "Ж": ("K", ("draw", cap_Ж)), "И": ("H", ("draw", cap_И)), "Й": ("H", ("draw", cap_Й)),
@@ -442,7 +427,7 @@ LOWERCASE = {
     "р": ("p", ("copy", "p")), "с": ("c", ("copy", "c")), "у": ("y", ("copy", "y")),
     "х": ("x", ("copy", "x")), "п": ("n", ("draw", low_small("N"))), "м": ("n", ("draw", low(cap_М))),
     "ш": ("w", ("copy", "w")), "г": ("r", ("copy", "r")), "б": ("n", ("draw", low(cap_Б))),
-    "в": ("n", ("draw", low_small("B"))), "з": ("n", ("draw", low(cap_З))),
+    "в": ("n", ("draw", low_small("B"))), "з": ("n", ("draw", low_small("3"))),
     "к": ("n", ("draw", low_small("K"))), "н": ("n", ("draw", low_small("H"))),
     "т": ("n", ("draw", low_small("T"))), "ч": ("n", ("draw", low_small("4"))),
     "я": ("n", ("small_mirror", "R")),
