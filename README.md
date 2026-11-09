@@ -15,8 +15,8 @@ Remastered; строки, которых не было на GameCube (меню, 
 | ![Журнал](docs/screenshots/logbook.png) | ![Карта и легенда](docs/screenshots/map.png) |
 
 ## Что нужно
-- [PrimeRecomp](https://github.com/gminustwo/primerecomp/releases): перевод проверен на **v0.0.8**
-  (7 ноября 2026). Если на новой версии что-то сломалось,
+- [PrimeRecomp](https://github.com/gminustwo/primerecomp/releases): перевод проверен на **v0.0.9**
+  (9 ноября 2026). Если на новой версии что-то сломалось,
   [откройте issue](https://github.com/454135431515/metroid-prime-remastered-ru/issues) с версией
   PrimeRecomp и файлом `primerecomp.log`;
 - свой дамп **Metroid Prime Remastered v1.0.0** (`010012101468C000`) в формате NSP и `prod.keys`
@@ -86,7 +86,7 @@ Metroid Prime является товарным знаком Nintendo; прое�
 ---
 
 **English.** A Russian translation of Metroid Prime Remastered (Switch v1.0.0) for
-[PrimeRecomp](https://github.com/gminustwo/primerecomp) (checked on v0.0.8), based on the
+[PrimeRecomp](https://github.com/gminustwo/primerecomp) (checked on v0.0.9), based on the
 [GameCube translation](https://github.com/454135431515/metroid-prime-ru). No Nintendo data or keys
 are included: run `pip install -r requirements.txt`, then `python3 install.py <your game.nsp>`
 (with `prod.keys` next to it; on Windows add `--mods <PrimeRecomp folder>\mods`). The game language
