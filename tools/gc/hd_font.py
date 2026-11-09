@@ -7,20 +7,26 @@ platform/include/port_hd_font.h) дополняется русскими бук�
 текст растровым шрифтом диска. Здесь латинские глифы восстанавливаются в 4 раза крупнее (поле
 расстояний увеличивается и обрезается по краю), русские собираются теми же рецептами, что растровые
 (tools/cyrillic.py: копии, зеркала, конструкторы по меркам H), и снова переводятся в поле расстояний.
+Буквы, нарисованные вручную (`tools/glyphs/U+XXXX.svg`, ADR 0004), берутся из SVG вместо рецептов.
 Латиница и раскладка атласа не меняются, новые глифы дописываются полками ниже.
 Шрифт строится только из файла импорта владельца — без импорта Remastered его нет.
 """
 
+import os
+import re
 import struct
 import sys
 
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageDraw
 
 sys.path.insert(0, __import__("os").path.dirname(__import__("os").path.abspath(__file__)))
 import cyrillic  # noqa: E402
 
 U = 4          # во сколько раз крупнее восстанавливаются глифы
+GLYPHS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "glyphs")
+# сетка SVG (ADR 0004): заглавные от y=200, строчные от y=336, базовая линия y=900
+SVG_CAP, SVG_XH, SVG_BASE = 200, 336, 900
 HEAD = "<4sIIIffI"
 GLYPH = "<I9f"
 
@@ -92,12 +98,58 @@ class Ref:
         self.cell = hires_cell(g, w, h, dist)
 
 
+def svg_glyphs():
+    """{символ: путь} нарисованных букв."""
+    if not os.path.isdir(GLYPHS):
+        return {}
+    out = {}
+    for name in os.listdir(GLYPHS):
+        m = re.fullmatch(r"U\+([0-9A-F]{4})\.svg", name)
+        if m:
+            out[chr(int(m.group(1), 16))] = os.path.join(GLYPHS, name)
+    return out
+
+
+def svg_drawn(path, ch, P, ss=4):
+    """Маска буквы из SVG на сетке ADR 0004: высота заглавной 700 единиц = P.h пикселей маски.
+    Контуры — только M/L/Z в абсолютных координатах; дыры — evenodd (каждый контур XOR)."""
+    svg = open(path, encoding="utf-8").read()
+    if re.search(r"<(script|image|use|text)\b|transform=|href=", svg):
+        raise ValueError(f"{path}: в SVG только контуры")
+    width = float(re.search(r'viewBox="0 0 ([\d.]+) [\d.]+"', svg).group(1))
+    rings = []
+    for d in re.findall(r'\sd="([^"]+)"', svg):
+        for part in re.findall(r"M([^MZ]+)Z", d):
+            nums = [float(v) for v in re.findall(r"-?[\d.]+", part)]
+            rings.append(list(zip(nums[0::2], nums[1::2])))
+    if not rings:
+        raise ValueError(f"{path}: нет контуров")
+    top = SVG_CAP if ch.isupper() else SVG_XH
+    y0 = min(top, min(y for r in rings for _, y in r))
+    y1 = max(SVG_BASE, max(y for r in rings for _, y in r))
+    k = P.h / (SVG_BASE - SVG_CAP) * ss
+    w, h = round(width * k), round((y1 - y0) * k)
+    acc = np.zeros((h, w), bool)
+    for r in rings:
+        img = Image.new("1", (w, h), 0)
+        ImageDraw.Draw(img).polygon([(x * k, (y - y0) * k) for x, y in r], fill=1)
+        acc ^= np.array(img, bool)
+    small = acc[:h // ss * ss, :w // ss * ss].reshape(h // ss, ss, w // ss, ss).mean((1, 3)) >= 0.5
+    rows = [list(r) for r in small]
+    above = round((top - y0) * k / ss)
+    below = round((y1 - SVG_BASE) * k / ss)
+    return cyrillic.Drawn(rows, above=above, below=below)
+
+
 def make_glyphs(P, refs, have, pad, per):
     """Русские глифы: [(символ, запись глифа без UV, поле расстояний или None — копия латинского)]."""
     recipes = {c: r for c, r in {**cyrillic.CAPITALS, **cyrillic.LOWERCASE}.items() if c not in have}
     new = []  # (символ, запись глифа без UV, поле расстояний)
+    drawn_svg = svg_glyphs()
     for ch, (ref_ch, (how, arg)) in recipes.items():
         ref = refs[ref_ch]
+        if ch in drawn_svg:
+            how, arg = "svg", drawn_svg[ch]
         if how == "copy":
             g = list(have[arg])
             g[0] = ord(ch)
@@ -110,6 +162,8 @@ def make_glyphs(P, refs, have, pad, per):
             drawn = cyrillic.Drawn([r[::-1] for r in cyrillic.shrink_rows(P.mask(arg), ry1 - ry0)])
         elif how == "draw":
             drawn = arg(P)
+        elif how == "svg":
+            drawn = svg_drawn(arg, ch, P)
         else:
             raise ValueError(how)
         mask = drawn.mask

@@ -4,7 +4,8 @@
     python -I tools/sync_gc.py           # обновить tools/gc/ и text/ru-labels.json
     python -I tools/sync_gc.py --check   # только сверить (tools/test.sh)
 
-- tools/gc/: код шрифтов (cyrillic.py, hd_font.py, font.py) — байт в байт как в metroid-prime-ru;
+- tools/gc/: код шрифтов (cyrillic.py, hd_font.py, font.py) и нарисованные буквы (glyphs/*.svg) —
+  байт в байт как в metroid-prime-ru;
 - text/ru-labels.json: {метка MSBT: русская строка} — итог tools/transfer.py по work/romfs. Только
   перевод и коды разметки, без английского текста: en.json GameCube — данные Nintendo.
 Нет соседней папки или work/romfs — соответствующая сверка пропускается.
@@ -44,6 +45,16 @@ def main(check=False):
                 stale.append(f"tools/gc/{name}")
                 if not check:
                     shutil.copyfile(src, dst)
+        src, dst = os.path.join(GC_TOOLS, "glyphs"), os.path.join(VENDOR, "glyphs")
+        names = sorted(os.listdir(src)) if os.path.isdir(src) else []
+        have = sorted(os.listdir(dst)) if os.path.isdir(dst) else []
+        if names != have or any(open(os.path.join(src, n), "rb").read() != open(os.path.join(dst, n), "rb").read()
+                                for n in names):
+            stale.append("tools/gc/glyphs/")
+            if not check:
+                shutil.rmtree(dst, ignore_errors=True)
+                if names:
+                    shutil.copytree(src, dst)
     else:
         print("sync_gc: нет папки MP russian — копии кода не сверены")
     if os.path.isdir(ROMFS) and os.path.isdir(GC_TOOLS):
