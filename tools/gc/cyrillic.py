@@ -542,9 +542,32 @@ def build_glyph(ch, recipe, glyphs, cells, outlined, P):
         drawn = Drawn(stems_diag(P, rx1 - rx0, ry1 - ry0))
     elif how == "draw":
         drawn = arg(P)
+    elif how == "pixels":
+        drawn = Drawn(arg)
     else:
         raise ValueError(how)
     return place(drawn, ref, ref_cell, outlined)
+
+
+PIXEL = os.path.join(os.path.dirname(os.path.abspath(__file__)), "pixel")
+
+
+def pixel_glyphs(name):
+    """{буква: маска} из tools/pixel/<шрифт>.txt — нарисованные вручную (ADR 0007); нет файла — {}."""
+    path = os.path.join(PIXEL, f"{name}.txt")
+    if not os.path.exists(path):
+        return {}
+    out, ch = {}, None
+    for line in open(path, encoding="utf-8").read().splitlines():
+        if line.startswith("U+"):
+            ch = chr(int(line.split()[0][2:], 16))
+            out[ch] = []
+        elif line.strip():
+            out[ch].append([c == "#" for c in line.strip()])
+    for ch, mask in out.items():
+        if len({len(r) for r in mask}) != 1:
+            raise ValueError(f"{path}: {ch!r} rows differ in width")
+    return out
 
 
 def add_glyphs(f, a, recipes):
@@ -554,6 +577,8 @@ def add_glyphs(f, a, recipes):
     cells = {ch: cell_pixels(a, g) for ch, g in glyphs.items()}
     outlined = f.mode == 1
     P = Metrics(cells)
+    drawn = pixel_glyphs(f.name)
+    recipes = {ch: (r[0], ("pixels", drawn[ch])) if ch in drawn else r for ch, r in recipes.items()}
     new = []
     for ch, recipe in recipes.items():
         if ch in glyphs:

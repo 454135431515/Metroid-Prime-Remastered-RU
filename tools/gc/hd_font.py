@@ -100,8 +100,8 @@ class Ref:
 
 def svg_glyphs():
     """{символ: путь} нарисованных букв."""
-    if not os.path.isdir(GLYPHS):
-        return {}
+    if not os.path.isdir(GLYPHS):  # без папки шрифт молча ушёл бы на рецепты
+        raise FileNotFoundError(f"нет папки нарисованных букв {GLYPHS}")
     out = {}
     for name in os.listdir(GLYPHS):
         m = re.fullmatch(r"U\+([0-9A-F]{4})\.svg", name)

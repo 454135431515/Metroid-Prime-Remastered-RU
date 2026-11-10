@@ -3,7 +3,7 @@
 Русский текст и кириллица в шрифтах для [PrimeRecomp](https://github.com/gminustwo/primerecomp),
 нативного ПК-порта Metroid Prime Remastered (Switch, v1.0.0): меню, настройки, подсказки, сканы,
 журнал, карта, пауза, титры. Основа: перевод GameCube-версии
-[metroid-prime-ru](https://github.com/454135431515/metroid-prime-ru), перенесённый в строки
+[Metroid-Prime-RU](https://github.com/454135431515/Metroid-Prime-RU), перенесённый в строки
 Remastered; строки, которых не было на GameCube (меню, бонусы, новые подсказки), переведены здесь.
 Оба перевода самостоятельные: сделаны с нуля по английскому тексту игры, не основаны на переводе
 Mastertranslate и никак с ним не связаны.
@@ -82,7 +82,7 @@ Mastertranslate и никак с ним не связаны.
 Раздавайте этот репозиторий, а не результат сборки.
 
 ## Для разработки
-Перевод правится в [metroid-prime-ru](https://github.com/454135431515/metroid-prime-ru); здесь лежат
+Перевод правится в [Metroid-Prime-RU](https://github.com/454135431515/Metroid-Prime-RU); здесь лежат
 копии кода шрифтов (`tools/gc/`) и готовая таблица строк (`text/ru-labels.json`), их обновляет
 `tools/sync_gc.py` (ADR 0004). Строки только из Remastered: `text/ru-remastered.json`.
 Все проверки: `tools/test.sh`. Тикеты лежат в `docs/tickets/`, решения в `docs/adr/`.
@@ -95,7 +95,7 @@ Metroid Prime является товарным знаком Nintendo; прое�
 
 **English.** A Russian translation of Metroid Prime Remastered (Switch v1.0.0) for
 [PrimeRecomp](https://github.com/gminustwo/primerecomp) (checked on v0.0.9), based on the
-[GameCube translation](https://github.com/454135431515/metroid-prime-ru); both are independent
+[GameCube translation](https://github.com/454135431515/Metroid-Prime-RU); both are independent
 translations made from scratch, not based on or affiliated with the Mastertranslate translation. No Nintendo data or keys
 are included: run `pip install -r requirements.txt`, then `python3 install.py <your game.nsp>`
 (with `prod.keys` next to it; on Windows add `--mods <PrimeRecomp folder>\mods`). The game language
