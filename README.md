@@ -17,14 +17,20 @@ Mastertranslate и никак с ним не связаны.
 | ![Журнал](docs/screenshots/logbook.png) | ![Карта и легенда](docs/screenshots/map.png) |
 
 ## Что нужно
-- [PrimeRecomp](https://github.com/gminustwo/primerecomp/releases): перевод проверен на **v0.0.9**
-  (9 ноября 2026). Если на новой версии что-то сломалось,
+- [PrimeRecomp](https://github.com/gminustwo/primerecomp/releases): последняя проверенная версия —
+  **v0.0.9** (см. «Совместимость»). Если на новой версии что-то сломалось,
   [откройте issue](https://github.com/454135431515/metroid-prime-remastered-ru/issues) с версией
   PrimeRecomp и файлом `primerecomp.log`;
 - свой дамп **Metroid Prime Remastered v1.0.0** (`010012101468C000`) в формате NSP и `prod.keys`
   своей консоли. Это те же файлы, из которых настраивается сам PrimeRecomp;
 - [Python 3](https://www.python.org/downloads/) (на Windows при установке отметьте
   «Add python.exe to PATH»).
+
+## Совместимость
+Последняя проверка: PrimeRecomp **v0.0.9**, 9 ноября 2026, — **пройдена**.
+- Мод загружается без изменений (код игры в v0.0.9 тот же).
+- Меню, HUD, карта, снаряжение и журнал проверены прогоном по сценарию.
+- Все проверки `tools/test.sh` прошли.
 
 ## Установка
 1. Установите и один раз запустите PrimeRecomp: на стартовом экране выберите свой NSP и нажмите
