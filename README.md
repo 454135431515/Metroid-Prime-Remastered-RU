@@ -5,6 +5,8 @@
 журнал, карта, пауза, титры. Основа: перевод GameCube-версии
 [metroid-prime-ru](https://github.com/454135431515/metroid-prime-ru), перенесённый в строки
 Remastered; строки, которых не было на GameCube (меню, бонусы, новые подсказки), переведены здесь.
+Оба перевода самостоятельные: сделаны с нуля по английскому тексту игры, не основаны на переводе
+Mastertranslate и никак с ним не связаны.
 
 В репозитории нет данных Nintendo и ключей: мод собирается у каждого из его собственной копии игры.
 
@@ -87,7 +89,8 @@ Metroid Prime является товарным знаком Nintendo; прое�
 
 **English.** A Russian translation of Metroid Prime Remastered (Switch v1.0.0) for
 [PrimeRecomp](https://github.com/gminustwo/primerecomp) (checked on v0.0.9), based on the
-[GameCube translation](https://github.com/454135431515/metroid-prime-ru). No Nintendo data or keys
+[GameCube translation](https://github.com/454135431515/metroid-prime-ru); both are independent
+translations made from scratch, not based on or affiliated with the Mastertranslate translation. No Nintendo data or keys
 are included: run `pip install -r requirements.txt`, then `python3 install.py <your game.nsp>`
 (with `prod.keys` next to it; on Windows add `--mods <PrimeRecomp folder>\mods`). The game language
 must be English (F1 → Controls → Language). Code is MIT, translation text is CC BY 4.0.
